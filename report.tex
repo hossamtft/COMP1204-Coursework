@@ -1,0 +1,238 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[margin=1in]{geometry}
+
+\title{Coursework 2: Covid Cases Database}
+\author{Hossameldin Tammam}
+\date{April 2024}
+
+\begin{document}
+
+\maketitle
+
+\section{Relation Model}
+\subsection{EX1}
+
+\begin{tabular}{|c|c|}
+ \hline
+ Attribute & Data Type \\
+ \hline
+ dateRep & TEXT\\
+ \hline
+ day & INTEGER\\
+ \hline
+ month & INTEGER\\
+ \hline
+ year & INTEGER\\
+ \hline
+ cases & INTEGER\\
+ \hline
+ deaths & INTEGER\\
+ \hline
+ countriesAndTerritories & TEXT\\
+ \hline
+ geoId & TEXT\\
+ \hline
+ countryterritoryCode & TEXT\\
+ \hline
+ popData2020 & INTEGER\\
+ \hline
+ continentExp & TEXT\\
+ \hline
+\end{tabular}
+
+\subsection{EX2}    
+\begin{tabular}[t]{|c|}
+  \hline
+  \textbf{Functional Dependency} \\
+  \hline
+  dateRep $\to$ day\\ 
+  dateRep $\to$ month\\ 
+  dateRep $\to$ year\\
+  (day,month,year) $\to$ dateRep \\
+  dateRep,geoId $\to$ cases\\ 
+  dateRep, geoId $\to$ deaths \\ 
+  geoId $\to$ countriesAndTerritories\\ 
+  geoId $\to$ countryterritoryCode\\ 
+  countryterritoryCode $\to$ geoId\\ 
+  countryterritoryCode $\to$ popData2020\\ 
+  geoId $\to$ popData2020\\ 
+  \hline
+\end{tabular}
+
+\pagebreak
+\subsection{EX3}
+\begin{table}[h]
+ \begin{tabular}{|c|} 
+  \hline
+  \textbf{Candidate keys} \\ [1ex]
+  \hline 
+  dateRep, countriesAndTerritories\\ [1ex]
+  dateRep, geoId\\ [1ex]
+  dateRep, countryterritoryCode\\ [1ex]
+  \hline
+ \end{tabular}
+\end{table}
+
+\subsection{EX4}
+Using dateRep is more convenient than using one of day, month or year, and geoID is perfect as it is unique to each country and short.
+\begin{table}[h]
+\begin{tabular}{|c|}
+\hline
+\textbf{Primary key} \\ [1ex]
+\hline
+dateRep, geoID\\ [1ex] 
+\hline
+\end{tabular}
+\end{table}
+
+\section{Normalisation}
+\subsection{EX5}
+There are two partial dependencies: \\
+\\
+dateRep $\to$ day, month, year\\
+geoID $\to$ countriesAndTerritories, countryterritoryCode, popData2020, continentExp \\
+\\
+We will separate these 2 relations and have a table:\\
+\\
+dateRep, geoID $\to$ cases, deaths
+
+\subsection{EX6}
+\begin{verbatim}
+CovidDates(\underline{dateRep}, day, month, year)\\
+CountryDetails(\underline{geoID}, countriesAndTerritories, 
+countryterritoryCode, continentExp)\\
+CovidCases(\underline{dateRep, geoID}, cases, deaths, popData2020)\\
+\\
+The primary key for each table is:\\
+CovidDates : dateRep\\
+CountryDetails : geoID\\
+CovidCases : dateRep, geoID\\
+\end{verbatim}
+
+\subsection{EX7}
+In the new relations, there are no transitive dependencies
+
+\subsection{EX8}
+Both relations are already in 3NF because each non-prime attribute is directly dependent on the keys, and there are no transitive dependencies.
+
+\subsection{EX9}
+The relations are already in Boyce-Codd Normal Form (BCNF). BCNF ensures that all functional dependencies are based on candidate keys.
+
+\section{Modelling}
+\subsection{EX10}
+1. Launch SQLite3 in the directory with your dataset.csv file by typing in "sqlite3 coronavirus.db"\\
+2. type in ".mode csv" to enter CSV mode\\
+3. type in ".import dataset.csv dataset"\\
+4. type in ".output dataset.sql"\\
+5. type in ".dump dataset"\\
+
+\subsection{EX11}
+Creates all 3 tables stated in EX6 with all the types for all the colomns 
+\begin{verbatim}
+CREATE TABLE CovidDates (
+    dateRep TEXT PRIMARY KEY,
+    day INTEGER,
+    month INTEGER,
+    year INTEGER
+);
+
+CREATE TABLE CountryDetails (
+    geoId TEXT PRIMARY KEY,
+    countriesAndTerritories TEXT,
+    countryterritoryCode TEXT,
+    continentExp TEXT
+);
+
+CREATE TABLE CovidCases (
+    dateRep TEXT not null,
+    geoId TEXT not null ,
+    cases INTEGER,
+    deaths INTEGER,
+    popData2020 INTEGER,
+    primary key (dateRep,geoId)
+);
+\end{verbatim}
+
+\subsection{EX12}
+Insert all values from the dataset table to the 3 tables created in EX11
+\begin{verbatim}
+INSERT INTO CovidDates (dateRep, day, month, year)
+SELECT DISTINCT dateRep, day, month, year FROM dataset;
+
+INSERT INTO CountryDetails (geoId, countriesAndTerritories, 
+countryterritoryCode, continentExp)
+SELECT DISTINCT geoId, countriesAndTerritories, countriesAndTerritories, 
+continentExp FROM dataset;
+
+INSERT INTO CovidCases (dateRep, geoId, cases, deaths, popData2020)
+SELECT DISTINCT dateRep, geoId, cases, deaths, popData2020 FROM dataset;
+\end{verbatim}
+
+\subsection{EX13}
+Make sure both ex11 and ex12 work on a blank database and it does.
+\begin{verbatim}
+sqlite3 coronavirus.db < dataset.sql
+sqlite3 coronavirus.db < ex11.sql
+sqlite3 coronavirus.db < ex12.sql 
+\end{verbatim}
+\section{Querying}
+\subsection{EX14}
+Access sum of cases and deaths from CovidCases table
+\begin{verbatim}
+SELECT sum(cases) as total_cases, sum(deaths) as total_deaths\\
+from CovidCases;
+\end{verbatim}
+\subsection{EX15}
+Using DATE() to convert string dateRep to a date so it can be sorted properly, keep only rows with geoID as UK and show the date and cases.
+\begin{verbatim}
+SELECT dateRep, cases FROM CovidCases WHERE geoId = 'UK'
+ORDER BY DATE(dateRep) ASC;
+\end{verbatim}
+\subsection{EX16}
+Joined CovidCases and CountryDetails table to access country names, ordered TotalCases and TotalDeaths by date, used Date() to convert dateRep to a date.
+\begin{verbatim}
+SELECT CountryDetails.countriesAndTerritories AS Country,
+       CovidCases.dateRep AS Date,
+       CovidCases.cases AS TotalCases,
+       CovidCases.deaths AS TotalDeaths
+FROM CountryDetails
+JOIN CovidCases ON CountryDetails.geoId = CovidCases.geoId
+ORDER BY Date(Date) ASC;
+
+\end{verbatim}
+\subsection{EX17}
+Joined CountryDetails table to access country names, calculated case and deaths percentage against population and rounded to 2 decimal places.
+\begin{verbatim}
+SELECT CountryDetails.countriesAndTerritories,
+       ROUND((SUM(cases) / popData2020) * 100, 2) AS PercentCases,
+       ROUND((SUM(deaths) / popData2020) * 100, 2) AS PercentDeaths
+FROM CovidCases
+NATURAL JOIN CountryDetails
+GROUP BY countriesAndTerritories, popData2020;
+\end{verbatim}
+\subsection{EX18}
+Calculate  percentage of deaths compared to cases and rounded to 2, joined CovidCases and CountryDetails table to access country names, limit to 10 to provide only first 10, order by percentage descending.
+\begin{verbatim}
+SELECT CountryDetails.countriesAndTerritories AS Country,
+    ROUND((SUM(deaths) / sum(cases)) * 100, 2) AS Precentage
+FROM CountryDetails
+JOIN CovidCases ON CountryDetails.geoId = CovidCases.geoId
+GROUP BY CountryDetails.countriesAndTerritories
+ORDER BY Precentage DESC
+LIMIT 10;
+\end{verbatim}
+\subsection{EX19}
+For the united kingdom provide all the commulative deaths and cases and sort it by date.
+\begin{verbatim}
+SELECT dateRep as Date,
+	SUM(deaths) OVER (ROWS UNBOUNDED PRECEDING) AS CumulativeUKDeaths,
+	SUM(cases) OVER (ROWS UNBOUNDED PRECEDING) AS CumulativeUKCases
+FROM CovidCases
+WHERE geoId = 'UK'
+ORDER BY date(dateRep);
+\end{verbatim}
+\section{Extension}
+\subsection{EX20}
+Have Not Attempted Extension
+\end{document}
